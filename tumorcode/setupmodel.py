@@ -93,7 +93,7 @@ def BuildDB():
       print(imagelocation,truthlocation )
 
       # load nifti file
-      imagedata = nib.load(imagelocation )
+      imagedata = nib.load(imagelocation)
       numpyimage= imagedata.get_data().astype(settings.IMG_DTYPE )
       # error check
       assert numpyimage.shape[0:2] == (settings._globalexpectedpixel,settings._globalexpectedpixel)

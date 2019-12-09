@@ -20,7 +20,7 @@ def process_options():
                   action="store_true", dest="trainmodel", default=False,
                   help="train model on all data", metavar="bool")
     parser.add_option( "--predictmodel",
-                  action="store", dest="predictmodel", default=None,
+                  action="store", dest="predictmodel", default=False,
                   help="model weights (.h5) for prediction", metavar="Path")
     parser.add_option( "--predictimage",
                   action="store", dest="predictimage", default=None,
@@ -38,10 +38,10 @@ def process_options():
                   type="int", dest="trainingresample", default=256,
                   help="resample so that model prediction occurs at this resolution", metavar="int")
     parser.add_option( "--trainingbatch",
-                  type="int", dest="trainingbatch", default=20,
+                  type="int", dest="trainingbatch", default=10,
                   help="batch size", metavar="int")
     parser.add_option( "--validationbatch",
-                  type="int", dest="validationbatch", default=20,
+                  type="int", dest="validationbatch", default=10,
                   help="batch size", metavar="int")
     parser.add_option( "--kfolds",
                   type="int", dest="kfolds", default=1,
@@ -50,7 +50,7 @@ def process_options():
                   type="int", dest="idfold", default=-1,
                   help="individual fold for k folds", metavar="int")
     parser.add_option( "--rootlocation",
-                  action="store", dest="rootlocation", default='/rsrch1/ip/jacctor/LiTS/LiTS',
+                  action="store", dest="rootlocation", default='./tumorcode',
                   help="root location for images for training", metavar="Path")
     parser.add_option("--numepochs",
                   type="int", dest="numepochs", default=10,
@@ -62,7 +62,7 @@ def process_options():
                   action="store_true", dest="augment", default=False,
                   help="use data augmentation for training", metavar="bool")
     parser.add_option( "--skip",
-                  action="store_true", dest="skip", default=False,
+                  action="store_true", dest="skip", default=True,
                   help="skip connections in UNet", metavar="bool")
     parser.add_option( "--fanout",
                   action="store_true", dest="fanout", default=False,
@@ -74,7 +74,7 @@ def process_options():
                   action="store_true", dest="reverse_up", default=False,
                   help="perform conv2D then upsample on way back up UNet", metavar="bool")
     parser.add_option( "--depth",
-                  type="int", dest="depth", default=3,
+                  type="int", dest="depth", default=5,
                   help="number of down steps to UNet", metavar="int")
     parser.add_option( "--filters",
                   type="int", dest="filters", default=16,
@@ -86,8 +86,8 @@ def process_options():
                   type="float", dest="segthreshold", default=0.5,
                   help="cutoff for binary segmentation from real-valued output", metavar="float")
     parser.add_option( "--dropout",
-                  type="float", dest="dropout", default=0.5,
-                  help="percent  dropout", metavar="float")
+                  type="float", dest="dropout", default=0.01,
+                  help="percent dropout", metavar="float")
     parser.add_option( "--nu",
                   type="int", dest="nu", default=2,
                   help="number of smoothing steps (conv blocks) at each down/up", metavar="int")
@@ -103,6 +103,13 @@ def process_options():
     parser.add_option( "--makepredictions",
                   action="store_true", dest="makepredictions", default=False,
                   help="make predictions during k-fold training", metavar="bool")
+    
+    parser.add_option( "--thickness",
+                  type="int", dest="thickness", default=1,
+                  help="how many 2D slices make up a thicker 3D slice", metavar="int")
+    parser.add_option("--D3", 
+                   action="store_true", dest="D3", default=False,
+                  help="treat data as 2D (false) or 3D (true)", metavar="bool")
 
     global options
     global args

@@ -1,6 +1,6 @@
 import numpy as np
 import keras
-from keras.layers import Input, Conv2D, UpSampling2D, Lambda, SpatialDropout2D, Dense, Layer, Activation, BatchNormalization, MaxPool2D, concatenate, LocallyConnected2D
+from keras.layers import Input, Conv2D, Conv3D, UpSampling2D, UpSampling3D, Lambda, SpatialDropout2D, SpatialDropout3D, Dense, Layer, Activation, BatchNormalization, MaxPool2D, MaxPool3D, concatenate, LocallyConnected2D
 from keras.models import Model, Sequential
 from keras.models import model_from_json, load_model
 from keras.utils import multi_gpu_model
@@ -11,28 +11,73 @@ import tensorflow as tf
 
 import settings
 
+# stacks 2D slices to create 3D slices -- Sofia 
+def thick_slices(imagestack, thickness):
+    x = imagestack.shape[1]
+    y = imagestack.shape[2]
+    
+    padding = np.zeros((1, x, y))
+    paddedstack = np.block([[[padding]], [[imagestack]], [[padding]]])
+    
+    nimages = paddedstack.shape[0]
+    z = nimages - thickness + 1
+
+    thickimagestacks = np.empty((z, thickness, x, y))
+
+    for i in range(z):
+        smallstack = np.array(paddedstack[i: i + thickness, :, :])
+        thickimagestacks[i, :, :, :] = smallstack
+    return thickimagestacks
+
+
+def DownSample25D (model):
+    model = MaxPool3D(pool_size=(1, 2, 2), strides=(1,2,2), data_format='channels_last')(model)
+    return model
+
+
+def UpSample25D (model):
+    model= UpSampling3D(size=(1, 2, 2), data_format='channels_last')(model)
+    return model
+
 
 def addConvBNSequential(model, filters=32):
     if settings.options.batchnorm:
           model = BatchNormalization()(model)
     if settings.options.dropout > 0.0:
+        if settings.options.D3:
+            model = SpatialDropout3D(settings.options.dropout)(model)
+        else:
           model = SpatialDropout2D(settings.options.dropout)(model)
-    model = Conv2D(filters=filters, kernel_size=(3,3), padding='same', activation=settings.options.activation)(model)
+    if settings.options.D3: 
+        model = Conv3D(filters=filters, kernel_size=(3,3,3), padding='same', activation=settings.options.activation)(model)
+    else:
+        model = Conv2D(filters=filters, kernel_size=(3,3), padding='same', activation=settings.options.activation)(model)
     return model
+
 
 def module_down(model, filters=16, activation='prelu'):
     for i in range(settings.options.nu):
         model = addConvBNSequential(model, filters=filters)
-    model = MaxPool2D()(model)
+    if settings.options.D3:
+        model = DownSample25D(model)
+    else:
+        model = MaxPool2D()(model)
     return model
+
 
 def module_up(model, filters=16):
     if settings.options.reverse_up:
         for i in range(settings.options.nu):
             model = addConvBNSequential(model, filters=filters)
-        model = UpSampling2D()(model)
+        if settings.options.D3: 
+            model = UpSample25D (model)
+        else:
+            model = UpSampling2D()(model)
     else:
-        model = UpSampling2D()(model)
+        if settings.options.D3:
+            model = UpSample25D (model)
+        else: 
+            model = UpSampling2D()(model)
         for i in range(settings.options.nu):
             model = addConvBNSequential(model, filters=filters)
     return model
@@ -52,8 +97,9 @@ def module_mid(model, depth, filters=16):
         if settings.options.skip:
             m_up = concatenate([model, m_up])
         else:
-            m_up = m_down + m_up
-        return m_up
+            m_up = model + m_up
+        return m_up    
+    
 
 def get_unet( _num_classes=1):
     _depth   = settings.options.depth
@@ -63,7 +109,11 @@ def get_unet( _num_classes=1):
 
     if settings.options.gpu > 1:
         with tf.device('/cpu:0'):
-            layer_in  = Input(shape=(settings._ny,settings._nx,1))
+            if settings.options.D3: 
+                layer_in  = Input(shape=(settings._ny, settings._nx, settings.options.thickness, 1))
+            else: 
+                layer_in  = Input(shape=(settings._ny, settings._nx, 1))
+                
             layer_adj = Activation('linear')(layer_in)
             layer_adj = Lambda(lambda x: (x - 100.0) / 80.0)(layer_adj)
 #            layer_adj = Conv2D(kernel_size=(1,1), filters=1, kernel_initializer=Constant(value=0.0125), bias_initializer=Constant(value=-1.25))(layer_adj)
@@ -78,7 +128,11 @@ def get_unet( _num_classes=1):
             model = Model(inputs=layer_in, outputs=layer_out)
             return multi_gpu_model(model, gpus=settings.options.gpu)
     else:
-        layer_in  = Input(shape=(settings._ny,settings._nx,1))
+        if settings.options.D3: 
+            layer_in  = Input(shape=(settings.options.thickness, settings._ny, settings._nx, 1))
+        else: 
+            layer_in  = Input(shape=(settings._ny, settings._nx, 1))
+            
         layer_adj = Activation('linear')(layer_in)
         layer_adj = Lambda(lambda x: (x - 100.0) / 80.0)(layer_adj)
 #        layer_adj = Conv2D(kernel_size=(1,1), filters=1, kernel_initializer=Constant(value=0.0125), bias_initializer=Constant(value=-1.25))(layer_adj)

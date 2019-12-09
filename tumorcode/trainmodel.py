@@ -12,7 +12,7 @@ from keras.utils.np_utils import to_categorical
 import keras.backend as K
 from keras.callbacks import TensorBoard, TerminateOnNaN, ModelCheckpoint
 from keras.callbacks import Callback as CallbackBase
-from keras.preprocessing.image import ImageDataGenerator
+from keras.preprocessing.image import ImageDataGenerator as oldImageDataGenerator
 from keras.initializers import Constant
 from optparse import OptionParser # TODO update to ArgParser (python2 --> python3)
 import nibabel as nib
@@ -24,7 +24,10 @@ import matplotlib as mptlib
 mptlib.use('TkAgg')
 import matplotlib.pyplot as plt
 
+
 import settings 
+#from tweaked_ImageGenerator_v2 import ImageDataGenerator
+from generator import customImageDataGenerator as ImageDataGenerator
 
 
 ###
@@ -33,7 +36,7 @@ import settings
 def TrainModel(idfold=0):
 
   from setupmodel import GetSetupKfolds, GetCallbacks, GetOptimizer, GetLoss
-  from buildmodel import get_unet
+  from buildmodel import get_unet, thick_slices
 
   ###
   ### load data
@@ -62,8 +65,16 @@ def TrainModel(idfold=0):
   np.random.shuffle(trainingsubset)
   totnslice = len(trainingsubset)
 
-  x_train=trainingsubset['imagedata']
-  y_train=trainingsubset['truthdata']
+  if settings.options.D3:
+      x_data = trainingsubset['imagedata']
+      y_data = trainingsubset['truthdata']
+      
+      x_train = thick_slices(x_data, settings.options.thickness)
+      y_train = thick_slices(y_data, settings.options.thickness)
+  else: 
+      x_train=trainingsubset['imagedata']
+      y_train=trainingsubset['truthdata']
+  
 
   slicesplit        = int(0.9 * totnslice)
   TRAINING_SLICES   = slice(         0, slicesplit)
@@ -121,7 +132,6 @@ def TrainModel(idfold=0):
 
   print("\n\n\tlivermask training...\tModel parameters: {0:,}".format(model.count_params()))
 
-
   if settings.options.augment:
       train_datagen = ImageDataGenerator(
           brightness_range=[0.95,1.05],
@@ -133,19 +143,29 @@ def TrainModel(idfold=0):
           fill_mode='nearest',
           )
   else:
-      train_datagen=ImageDataGenerator()
+      train_datagen = ImageDataGenerator()
 
   test_datagen = ImageDataGenerator()
 
-  train_generator = train_datagen.flow(x_masked[TRAINING_SLICES,:,:,np.newaxis],
+  if settings.options.D3:      
+      train_generator = train_datagen.flow(x_masked[TRAINING_SLICES,:,:,:, np.newaxis],
+                        y_train_tumor[TRAINING_SLICES,:,:,:, np.newaxis],
+                        batch_size=settings.options.trainingbatch)
+      test_generator = test_datagen.flow(x_masked[TRAINING_SLICES,:,:,:, np.newaxis],
+                        y_train_tumor[TRAINING_SLICES,:,:,:, np.newaxis],
+                        batch_size=settings.options.validationbatch)
+  else: 
+      train_generator = train_datagen.flow(x_masked[TRAINING_SLICES,:,:,np.newaxis],
                         y_train_tumor[TRAINING_SLICES,:,:,np.newaxis],
                         batch_size=settings.options.trainingbatch)
-  test_generator = test_datagen.flow(x_masked[VALIDATION_SLICES,:,:,np.newaxis],
+      test_generator = test_datagen.flow(x_masked[VALIDATION_SLICES,:,:,np.newaxis],
                         y_train_tumor[VALIDATION_SLICES,:,:,np.newaxis],
                         batch_size=settings.options.validationbatch)
+      
   history_liver = model.fit_generator(
                         train_generator,
-                        steps_per_epoch= slicesplit / settings.options.trainingbatch,
+                        steps_per_epoch= slicesplit // settings.options.trainingbatch,
+                        validation_steps = (totnslice - slicesplit) // settings.options.validationbatch,
                         epochs=settings.options.numepochs,
                         validation_data=test_generator,
                         callbacks=callbacks)
@@ -156,14 +176,28 @@ def TrainModel(idfold=0):
   ### make predicions on validation set
   ###
   print("\n\n\tapplying models...")
-  y_pred_float = model.predict( x_masked[VALIDATION_SLICES,:,:,np.newaxis] )
+  if settings.options.D3:
+      y_pred_float = model.predict( x_masked[VALIDATION_SLICES,:,:,:,np.newaxis] )
+  else: 
+      y_pred_float = model.predict( x_masked[VALIDATION_SLICES,:,:,np.newaxis] )
+      
   y_pred_seg   = (y_pred_float[...,0] >= settings.options.segthreshold).astype(settings.SEG_DTYPE)
 
   print("\tsaving to file...")
-  trueinnii     = nib.Nifti1Image(x_train      [VALIDATION_SLICES,:,:] , None )
-  truesegnii    = nib.Nifti1Image(y_train      [VALIDATION_SLICES,:,:] , None )
-  truelivernii  = nib.Nifti1Image(y_train_liver[VALIDATION_SLICES,:,:] , None )
-  truetumornii  = nib.Nifti1Image(y_train_tumor[VALIDATION_SLICES,:,:] , None )
+  
+  if settings.options.D3:
+      trueinnii     = nib.Nifti1Image(x_train      [VALIDATION_SLICES,:,:,:] , None )
+      truesegnii    = nib.Nifti1Image(y_train      [VALIDATION_SLICES,:,:,:] , None )
+      truelivernii  = nib.Nifti1Image(y_train_liver[VALIDATION_SLICES,:,:,:] , None )
+      truetumornii  = nib.Nifti1Image(y_train_tumor[VALIDATION_SLICES,:,:,:] , None )
+  else: 
+      trueinnii     = nib.Nifti1Image(x_train      [VALIDATION_SLICES,:,:] , None )
+      truesegnii    = nib.Nifti1Image(y_train      [VALIDATION_SLICES,:,:] , None )
+      truelivernii  = nib.Nifti1Image(y_train_liver[VALIDATION_SLICES,:,:] , None )
+      truetumornii  = nib.Nifti1Image(y_train_tumor[VALIDATION_SLICES,:,:] , None )
+  
+
+  
   predsegnii    = nib.Nifti1Image(y_pred_seg, None )
   predfloatnii  = nib.Nifti1Image(y_pred_float, None)
  
