@@ -142,24 +142,25 @@ def TrainModel(idfold=0):
           zoom_range=0.1,
           fill_mode='nearest',
           )
+      test_datagen = ImageDataGenerator()
   else:
-      train_datagen = ImageDataGenerator()
-
-  test_datagen = ImageDataGenerator()
+      train_datagen = oldImageDataGenerator()
+      test_datagen = oldImageDataGenerator()
+      
 
   if settings.options.D3:      
-      train_generator = train_datagen.flow(x_masked[TRAINING_SLICES,:,:,:, np.newaxis],
-                        y_train_tumor[TRAINING_SLICES,:,:,:, np.newaxis],
+      train_generator = train_datagen.flow(x=x_masked[TRAINING_SLICES,:,:,:, np.newaxis],
+                        y=y_train_tumor[TRAINING_SLICES,:,:,:, np.newaxis],
                         batch_size=settings.options.trainingbatch)
-      test_generator = test_datagen.flow(x_masked[TRAINING_SLICES,:,:,:, np.newaxis],
-                        y_train_tumor[TRAINING_SLICES,:,:,:, np.newaxis],
+      test_generator = test_datagen.flow(x=x_masked[TRAINING_SLICES,:,:,:, np.newaxis],
+                        y=y_train_tumor[TRAINING_SLICES,:,:,:, np.newaxis],
                         batch_size=settings.options.validationbatch)
   else: 
-      train_generator = train_datagen.flow(x_masked[TRAINING_SLICES,:,:,np.newaxis],
-                        y_train_tumor[TRAINING_SLICES,:,:,np.newaxis],
+      train_generator = train_datagen.flow(x=x_masked[TRAINING_SLICES,:,:,np.newaxis],
+                        y=y_train_tumor[TRAINING_SLICES,:,:,np.newaxis],
                         batch_size=settings.options.trainingbatch)
-      test_generator = test_datagen.flow(x_masked[VALIDATION_SLICES,:,:,np.newaxis],
-                        y_train_tumor[VALIDATION_SLICES,:,:,np.newaxis],
+      test_generator = test_datagen.flow(x=x_masked[VALIDATION_SLICES,:,:,np.newaxis],
+                        y=y_train_tumor[VALIDATION_SLICES,:,:,np.newaxis],
                         batch_size=settings.options.validationbatch)
       
   history_liver = model.fit_generator(
