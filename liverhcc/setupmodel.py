@@ -53,8 +53,8 @@ def GetSetupKfolds(floc, numfolds, idfold):
       train_all_index = allkfolds[idfold][0]
       test_index      = allkfolds[idfold][1]
       len_train       = len(train_all_index)    
-      train_index     = allkfolds[:int(0.8*len_train)]
-      valid_index     = allkfolds[int(0.8*len_train):]
+      train_index     = train_all_index[:int(0.8*len_train)]
+      valid_index     = train_all_index[int(0.8*len_train):]
   else:
       train_all_index = np.array(dataidsfull )
       len_train       = len(train_all_index)
