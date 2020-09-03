@@ -88,7 +88,7 @@ def TrainModel(idfold=0):
   ntrainslices = len(trainingsubset)
   nvalidslices = len(validsubset)
 
-  if settings.options.D3 or settings.options.D25:
+  if settings.options.D3:
       x_data  = trainingsubset['imagedata']
       y_data  = trainingsubset['truthdata']
       x_valid = validsubset['imagedata']
@@ -100,8 +100,29 @@ def TrainModel(idfold=0):
       y_valid = thick_slices(y_valid, settings.options.thickness)
       
       np.random.seed(seed=0)
-      np.random.shuffle(x_train)
-      np.random.shuffle(y_train)
+      train_shuffle = np.random.permutation(x_train.shape[0])
+      valid_shuffle = np.random.permutation(x_valid.shape[0])
+      x_train = x_train[train_shuffle,...]
+      y_train = y_train[train_shuffle,...]
+      x_valid = x_valid[valid_shuffle,...]
+      y_valid = y_valid[valid_shuffle,...]
+      
+  elif settings.options.D25: 
+      x_data  = trainingsubset['imagedata']
+      y_train = trainingsubset['truthdata']
+      x_valid = validsubset['imagedata']
+      y_valid = validsubset['truthdata']
+      
+      x_train = thick_slices(x_data, settings.options.thickness)
+      x_valid = thick_slices(x_valid, settings.options.thickness)
+      
+      np.random.seed(seed=0)
+      train_shuffle = np.random.permutation(x_train.shape[0])
+      valid_shuffle = np.random.permutation(x_valid.shape[0])
+      x_train = x_train[train_shuffle,...]
+      y_train = y_train[train_shuffle,...]
+      x_valid = x_valid[valid_shuffle,...]
+      y_valid = y_valid[valid_shuffle,...]
   
   else: 
       np.random.seed(seed=0)
