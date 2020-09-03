@@ -136,6 +136,9 @@ def process_options():
     parser.add_option("--D3", 
                    action="store_true", dest="D3", default=False,
                   help="treat data as 2D (false) or 3D (true)", metavar="bool")
+    parser.add_option("--D25", 
+                  action="store_true", dest="D25", default=False,
+                  help="treat data as 2D (false) or 2.5D (true)", metavar="bool")
 
     global options
     global args
