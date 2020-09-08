@@ -12,7 +12,7 @@ import settings
 
 
 def dsc(y_true, y_pred, smooth=0.00001):
-    if settings.options.D3 or settings.options.D25:
+    if settings.options.D3:
         myaxis = (1,2,3)
     else: 
         myaxis = (1,2)
@@ -21,7 +21,7 @@ def dsc(y_true, y_pred, smooth=0.00001):
     return 1.0 - (num/den)
 
 def dsc_l2(y_true, y_pred, smooth=0.00001):
-    if settings.options.D3 or settings.options.D25:
+    if settings.options.D3:
         myaxis = (1,2,3)
     else: 
         myaxis = (1,2)
@@ -30,7 +30,7 @@ def dsc_l2(y_true, y_pred, smooth=0.00001):
     return num/den
 
 def dsc_int(y_true, y_pred, smooth=0.00001):
-    if settings.options.D3 or settings.options.D25:
+    if settings.options.D3:
         myaxis = (1,2,3)
     else: 
         myaxis = (1,2)
@@ -54,7 +54,7 @@ def dsc_l2_3D(y_true, y_pred, smooth=0.0000001):
 
 
 def l1(y_true, y_pred, smooth=0.00001):
-    if settings.options.D3 or settings.options.D25:
+    if settings.options.D3:
         myaxis = (1,2,3)
     else: 
         myaxis = (1,2)
@@ -64,7 +64,7 @@ def dsc_l1reg(y_true, y_pred, smooth=0.00001):
     return dsc_l2(y_true, y_pred, smooth) + l1(y_true, y_pred, smooth)  
 
 def iou_coef(y_true, y_pred, smooth=0.00001):
-    if settings.options.D3 or settings.options.D25:
+    if settings.options.D3:
         myaxis = [1,2,3]
     else: 
         myaxis = [1,2]
