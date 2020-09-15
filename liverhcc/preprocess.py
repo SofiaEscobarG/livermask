@@ -4,6 +4,7 @@ import settings
 from scipy import ndimage
 import skimage.transform
 from skimage.measure import label
+import settings
 
 # cut off img intensities
 # img : npy array
@@ -85,13 +86,19 @@ def resize_to_nn(img,transpose=True):
 
 # return to original size
 def resize_to_original(img,transpose=True):
+    if settings.options.D3 or settings.options.D25: 
+        imgshape = (img.shape[0],settings._globalexpectedpixel,settings._globalexpectedpixel,settings.options.thickness)
+        transposeshape  =(2,1,0,3)
+    else: 
+        imgshape = (img.shape[0],settings._globalexpectedpixel,settings._globalexpectedpixel)
+        transposeshape  =(2,1,0)
     real = skimage.transform.resize(img,
-            (img.shape[0],settings._globalexpectedpixel,settings._globalexpectedpixel),
+            imgshape,
             order=0,
             mode='constant',
             preserve_range=True)
     if transpose:
-        real = real.transpose(2,1,0)
+        real = real.transpose(transposeshape)
     return real
 
 # returns largest connected component of {0,1} binary segmentation image

@@ -49,6 +49,7 @@ if options.kfolds > 1:
 if options.trainmodel and options.kfolds==1 : # no kfolds, i.e. k=1
     TrainModel()
 if options.predictmodel:
-    PredictModel()
+    segloc=options.predictimage.replace("volume", "segmentation")
+    PredictModel(seg=segloc)
 if ( (not options.builddb) and (not options.trainmodel) and (not options.predictmodel) and (options.kfolds == 1)):
     print("parser error")
