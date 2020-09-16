@@ -21,7 +21,7 @@ import matplotlib.pyplot as plt
 
 import settings
 from setupmodel import GetOptimizer, GetLoss
-from buildmodel import get_unet, thick_slices
+from buildmodel import get_unet, thick_slices, unthick_slices
 from mymetrics import dsc, dsc_l2, l1, dsc_l2_3D, dsc_int
 from ista import ISTA
 import preprocess
@@ -45,13 +45,13 @@ def PredictModel(model=settings.options.predictmodel, image=settings.options.pre
     resizepredict = preprocess.rescale(resizepredict, settings.options.hu_lb, settings.options.hu_ub)
     
     if settings.options.D3 or settings.options.D25: 
-        resizepredict = thick_slices(resizepredict, settings.options.thickness)
+        resizepredict2 = thick_slices(resizepredict, settings.options.thickness)
+    else: 
+        resizepredict2 = resizepredict
         
     if seg: 
         origseg = preprocess.resize_to_nn(origseg)
         origseg = preprocess.livermask(origseg)
-        if settings.options.D3 or settings.options.D25: 
-            origseg = thick_slices(origseg, settings.options.thickness)
     
     ###
     ### set up model
@@ -64,9 +64,14 @@ def PredictModel(model=settings.options.predictmodel, image=settings.options.pre
 #    loaded_model.load_weights(model)
     loaded_model=load_model(model, custom_objects={'dsc_l2':dsc_l2, 'l1':l1, 'dsc':dsc, 'dsc_int':dsc, 'ISTA':ISTA})
 
-    segout_float = loaded_model.predict( resizepredict[...,np.newaxis] )[...,0]
+    segout_float = loaded_model.predict( resizepredict2[...,np.newaxis] )[...,0]
     segout_int   = (segout_float >= settings.options.segthreshold).astype(settings.SEG_DTYPE)
-    #segout_int   = preprocess.largest_connected_component(segout_int).astype(settings.SEG_DTYPE)
+
+    if settings.options.D3:
+        segout_float = unthick_slices(segout_float, settings.options.thickness)
+        segout_int   = unthick_slices(segout_int, settings.options.thickness)
+        
+    segout_int   = preprocess.largest_connected_component(segout_int).astype(settings.SEG_DTYPE)
     
     segin_windowed     = preprocess.resize_to_original(resizepredict)
     segin_windowed_img = nib.Nifti1Image(segin_windowed, None, header=origheader)

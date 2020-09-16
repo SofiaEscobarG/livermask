@@ -36,7 +36,7 @@ from generator import customImageDataGenerator as ImageDataGenerator3D
 def TrainModel(idfold=0):
 
   from setupmodel import GetSetupKfolds, GetCallbacks, GetOptimizer, GetLoss
-  from buildmodel import get_unet, thick_slices
+  from buildmodel import get_unet, thick_slices, unthick_slices
 
   ###
   ### set up output, logging and callbacks 
@@ -297,6 +297,12 @@ def TrainModel(idfold=0):
       
   y_pred_seg   = (y_pred_float[...,0] >= settings.options.segthreshold).astype(settings.SEG_DTYPE)    
 
+  if settings.options.D3:
+      x_valid       = unthick_slices(x_valid, settings.options.thickness)
+      y_valid       = unthick_slices(y_valid, settings.options.thickness)
+      y_valid_liver = unthick_slices(y_valid_liver, settings.options.thickness)
+      y_pred_float  = unthick_slices(y_pred_float, settings.options.thickness)
+      y_pred_seg    = unthick_slices(y_pred_seg, settings.options.thickness)
 
   print("\tsaving to file...")
   

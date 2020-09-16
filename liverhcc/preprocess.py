@@ -55,7 +55,7 @@ def reorient(imgloc, segloc=None):
     img_affine  = imagedata.affine
     numpyimage = imagedata.get_data().astype(settings.IMG_DTYPE)
     numpyseg   = None
-    print('image :    ', nib.orientations.aff2axcodes(orig_affine), ' to ', nib.orientations.aff2axcodes(img_affine))
+    #print('image :    ', nib.orientations.aff2axcodes(orig_affine), ' to ', nib.orientations.aff2axcodes(img_affine))
 
     if segloc is not None:
         segdata    = nib.load(segloc)
@@ -68,7 +68,7 @@ def reorient(imgloc, segloc=None):
             segdata = nib.nifti1.Nifti1Image(segcopy, orig_affine, header=copy_header)
             segdata = nib.as_closest_canonical(segdata)
             seg_affine = segdata.affine
-        print('seg   :    ', nib.orientations.aff2axcodes(old_affine), ' to ', nib.orientations.aff2axcodes(seg_affine))
+        #print('seg   :    ', nib.orientations.aff2axcodes(old_affine), ' to ', nib.orientations.aff2axcodes(seg_affine))
         numpyseg = segdata.get_data().astype(settings.SEG_DTYPE)
 
     return numpyimage, orig_header, numpyseg
@@ -86,12 +86,8 @@ def resize_to_nn(img,transpose=True):
 
 # return to original size
 def resize_to_original(img,transpose=True):
-    if settings.options.D3 or settings.options.D25: 
-        imgshape = (img.shape[0],settings._globalexpectedpixel,settings._globalexpectedpixel,settings.options.thickness)
-        transposeshape  =(2,1,0,3)
-    else: 
-        imgshape = (img.shape[0],settings._globalexpectedpixel,settings._globalexpectedpixel)
-        transposeshape  =(2,1,0)
+    imgshape = (img.shape[0],settings._globalexpectedpixel,settings._globalexpectedpixel)
+    transposeshape  =(2,1,0)
     real = skimage.transform.resize(img,
             imgshape,
             order=0,

@@ -40,6 +40,40 @@ def thick_slices(imagestack, thickness):
     return thickimagestacks
 
 
+def unthick_slices(thickimagestack, thickness):
+    (z,x,y,_) = thickimagestack.shape
+    nimages = z + thickness - 3
+    
+    paddedstack   = np.empty((x,y,z*thickness))
+    
+    for i in range(z):
+        paddedstack[:,:,i*thickness:(i+1)*thickness] = thickimagestack[i, :, :, :]
+        
+    paddedstack = np.transpose(paddedstack, (2,1,0))
+    paddedstack = paddedstack[1:-1, :, :]
+    
+    stack1 = np.empty((thickness-2,y,x))
+    for row in range(thickness-2):
+        idx = range(row, (thickness*(row+1)), thickness-1)
+        stack1[row,:,:] = np.average(paddedstack[idx,:,:], axis=0)
+
+    stack2 = np.empty((nimages-2*(thickness-2),y,x))    
+    for i in range(nimages-2*(thickness-2)):
+        row = range(thickness-2, (nimages-2*(thickness-2))*thickness, thickness)
+        idx = range(row[i], row[i]+thickness, thickness-1)
+        stack2[i,:,:] = np.average(paddedstack[idx,:,:], axis=0)
+    
+    stack3 = np.empty((thickness-2,y,x))
+    for i in range(thickness-2):
+        row = range((nimages-2*(thickness-2))*thickness+(thickness-2), len(paddedstack)-thickness+1, thickness)
+        idx = range(row[i], row[i]+((thickness-1)*(thickness-i-1)), thickness-1)
+        stack3[i,:,:] = np.average(paddedstack[idx,:,:], axis=0)  
+
+    unthickstack = np.vstack((stack1, stack2, stack3))
+    
+    return unthickstack
+
+
 def DepthwiseConvBlock(model_in):
     if settings.options.fanout:
         _dm = 2
