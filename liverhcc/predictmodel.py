@@ -52,6 +52,12 @@ def PredictModel(model=settings.options.predictmodel, image=settings.options.pre
     if seg: 
         origseg = preprocess.resize_to_nn(origseg)
         origseg = preprocess.livermask(origseg)
+        if settings.options.D25: 
+            origseg = thick_slices(origseg, 1)
+            origseg = origseg[...,0]
+        
+        origseg_img = nib.Nifti1Image(preprocess.resize_to_original(origseg), None)
+        origseg_img.to_filename( outdir.replace('.nii', '-trueseg.nii') )
     
     ###
     ### set up model
@@ -63,14 +69,18 @@ def PredictModel(model=settings.options.predictmodel, image=settings.options.pre
 #    loaded_model.compile(loss=lss, metrics=met, optimizer=opt)
 #    loaded_model.load_weights(model)
     loaded_model=load_model(model, custom_objects={'dsc_l2':dsc_l2, 'l1':l1, 'dsc':dsc, 'dsc_int':dsc, 'ISTA':ISTA})
-
-    segout_float = loaded_model.predict( resizepredict2[...,np.newaxis] )[...,0]
+    
+    if settings.options.D25: 
+        segout_float = loaded_model.predict( resizepredict2)[...,0]
+    else: 
+        segout_float = loaded_model.predict( resizepredict2[...,np.newaxis] )[...,0]
+    
     segout_int   = (segout_float >= settings.options.segthreshold).astype(settings.SEG_DTYPE)
 
     if settings.options.D3:
         segout_float = unthick_slices(segout_float, settings.options.thickness)
         segout_int   = unthick_slices(segout_int, settings.options.thickness)
-        
+
     segout_int   = preprocess.largest_connected_component(segout_int).astype(settings.SEG_DTYPE)
     
     segin_windowed     = preprocess.resize_to_original(resizepredict)

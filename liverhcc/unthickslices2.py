@@ -89,7 +89,7 @@ def unthick_slices(thickimagestack, thickness):
     return unthickstack
                 
                 
-thick=3
+thick=1
 a = range(1,37)
 A = np.reshape(a,newshape=(9,2,2))
 print("A array")

@@ -8,77 +8,37 @@ import numpy as np
 import csv
 
 # 3D slices function --Sofia
-def thick_slices2(imagestack, thickness):
+def thick_slices(imagestack, thickness, D3=False, D25=False):
     x = imagestack.shape[1]
     y = imagestack.shape[2]
     
-    padding = np.zeros((thickness-1, x, y))
-    paddedstack = np.block([[[padding]], [[imagestack]], [[padding]]])
+    if D3:
+        w = 1
+    elif D25:
+        w = thickness//2
+    
+    padding = np.zeros((w, x, y))
+    paddedstack = np.vstack((padding, imagestack, padding))
     
     nimages = paddedstack.shape[0]
     z = nimages - thickness + 1
-
-    thickimagestacks = np.empty((thickness*z, x, y))
+    
+    #paddedstack = np.reshape(paddedstack, (x,y,nimages))
+    paddedstack = np.transpose(paddedstack,(2,1,0))
+    thickimagestacks = np.empty((z, x, y, thickness))
 
     for i in range(z):
-        smallstack = np.array(paddedstack[i: i + thickness, :, :])
-        #thickimagestacks = np.block([[[[thickimagestacks]]], [[[smallstack]]]])
-        thickimagestacks[thickness*i: thickness*(i+1), :, :] = smallstack
+        thickimagestacks[i, :, :, :] = paddedstack[:,:,i: i + thickness]
     return thickimagestacks
 
 
-
-def thick_slices(imagestack, thickness):
-    x = imagestack.shape[1]
-    y = imagestack.shape[2]
-    
-    padding = np.zeros((1, x, y))
-    paddedstack = np.block([[[padding]], [[imagestack]], [[padding]]])
-    
-    nimages = paddedstack.shape[0]
-    z = nimages - thickness + 1
-
-    thickimagestacks = np.empty((z, thickness, x, y))
-
-    for i in range(z):
-        smallstack = np.array(paddedstack[i: i + thickness, :, :])
-        #thickimagestacks = np.block([[[[thickimagestacks]]], [[[smallstack]]]])
-        thickimagestacks[i, :, :, :] = smallstack
-    return thickimagestacks
-
-
-
-
-#imagestack1 = np.ones((2, 3)) 
-#imagestack2 = 2*imagestack1
-#imagestack3 = 3*imagestack1
-#imagestack4 = 4*imagestack1
-#imagestack5 = 5*imagestack1
-    
-#imagestack = np.block([[[imagestack1]], [[imagestack2]], [[imagestack3]], [[imagestack4]], [[imagestack5]]])
-    
-numpydatabase = np.load('trainingdata256.npy')
-
-dataidsfull = []
-with open('./trainingdata.csv', 'r') as csvfile:
-    myreader = csv.DictReader(csvfile, delimiter=',')
-    for row in myreader:
-       dataidsfull.append( int( row['dataid']))
-       
-train_index = np.array(dataidsfull )
-
-axialbounds = numpydatabase['axialtumorbounds']
-dataidarray = numpydatabase['dataid']
-dbtrainindex= np.isin(dataidarray, train_index )
-subsetidx_train  = np.all( np.vstack((axialbounds , dbtrainindex)) , axis=0 )
-
-trainingsubset = numpydatabase[subsetidx_train]
-x_train=trainingsubset['imagedata']
-
-imagestack = x_train[0:10, 0:10, 0:10]
-thickness = 3
-
-thickimagestacks = thick_slices(imagestack, thickness)
-
-print (thickimagestacks)
-print(thickimagestacks.shape)
+thick=1
+a = range(1,37)
+A = np.reshape(a,newshape=(9,2,2))
+print(A)
+print(A.shape)
+A = thick_slices(A, thick, D25=True)
+print(A)
+print(A.shape)
+A = A[...,0]
+print(A.shape)

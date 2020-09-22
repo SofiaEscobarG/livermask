@@ -109,12 +109,14 @@ def TrainModel(idfold=0):
       
   elif settings.options.D25: 
       x_data  = trainingsubset['imagedata']
-      y_train = trainingsubset['truthdata']
+      y_data  = trainingsubset['truthdata']
       x_valid = validsubset['imagedata']
       y_valid = validsubset['truthdata']
       
       x_train = thick_slices(x_data, settings.options.thickness)
       x_valid = thick_slices(x_valid, settings.options.thickness)
+      y_train = thick_slices(y_data, 1)
+      y_valid = thick_slices(y_valid, 1)
       
       np.random.seed(seed=0)
       train_shuffle = np.random.permutation(x_train.shape[0])
@@ -239,7 +241,7 @@ def TrainModel(idfold=0):
                                     batch_size=settings.options.trainingbatch,
                                     seed=sd,
                                     shuffle=True)
-      maskflow = train_maskgen.flow(y_train_liver[...,np.newaxis],
+      maskflow = train_maskgen.flow(y_train_liver,
                                     batch_size=settings.options.trainingbatch,
                                     seed=sd,
                                     shuffle=True)
@@ -248,7 +250,7 @@ def TrainModel(idfold=0):
                                          batch_size=settings.options.validationbatch,
                                          seed=sd,
                                          shuffle=True)
-      validmaskflow = valid_maskgen.flow(y_valid_liver[...,np.newaxis],
+      validmaskflow = valid_maskgen.flow(y_valid_liver,
                                          batch_size=settings.options.validationbatch,
                                          seed=sd,
                                          shuffle=True)
