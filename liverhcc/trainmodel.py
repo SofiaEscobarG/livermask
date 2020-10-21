@@ -36,7 +36,7 @@ from generator import customImageDataGenerator as ImageDataGenerator3D
 def TrainModel(idfold=0):
 
   from setupmodel import GetSetupKfolds, GetCallbacks, GetOptimizer, GetLoss
-  from buildmodel import get_unet, thick_slices, unthick_slices
+  from buildmodel import get_unet, thick_slices, unthick_slices, unthick
 
   ###
   ### set up output, logging and callbacks 
@@ -94,10 +94,11 @@ def TrainModel(idfold=0):
       x_valid = validsubset['imagedata']
       y_valid = validsubset['truthdata']
       
-      x_train = thick_slices(x_data, settings.options.thickness)
-      y_train = thick_slices(y_data, settings.options.thickness)
-      x_valid = thick_slices(x_valid, settings.options.thickness)
-      y_valid = thick_slices(y_valid, settings.options.thickness)
+      x_train = thick_slices(x_data, settings.options.thickness, trainingsubset['dataid'], train_index)
+      y_train = thick_slices(y_data, settings.options.thickness, trainingsubset['dataid'], train_index)
+      
+      x_valid = thick_slices(x_valid, settings.options.thickness, validsubset['dataid'], valid_index)
+      y_valid = thick_slices(y_valid, settings.options.thickness, validsubset['dataid'], valid_index)
       
       np.random.seed(seed=0)
       train_shuffle = np.random.permutation(x_train.shape[0])
@@ -113,10 +114,11 @@ def TrainModel(idfold=0):
       x_valid = validsubset['imagedata']
       y_valid = validsubset['truthdata']
       
-      x_train = thick_slices(x_data, settings.options.thickness)
-      x_valid = thick_slices(x_valid, settings.options.thickness)
-      y_train = thick_slices(y_data, 1)
-      y_valid = thick_slices(y_valid, 1)
+      x_train = thick_slices(x_data, settings.options.thickness, trainingsubset['dataid'], train_index)
+      x_valid = thick_slices(x_valid, settings.options.thickness, validsubset['dataid'], valid_index)
+      
+      y_train = thick_slices(y_data, 1, trainingsubset['dataid'], train_index)
+      y_valid = thick_slices(y_valid, 1, validsubset['dataid'], valid_index)
       
       np.random.seed(seed=0)
       train_shuffle = np.random.permutation(x_train.shape[0])
@@ -300,11 +302,12 @@ def TrainModel(idfold=0):
   y_pred_seg   = (y_pred_float[...,0] >= settings.options.segthreshold).astype(settings.SEG_DTYPE)    
 
   if settings.options.D3:
-      x_valid       = unthick_slices(x_valid, settings.options.thickness)
-      y_valid       = unthick_slices(y_valid, settings.options.thickness)
-      y_valid_liver = unthick_slices(y_valid_liver, settings.options.thickness)
-      y_pred_float  = unthick_slices(y_pred_float, settings.options.thickness)
-      y_pred_seg    = unthick_slices(y_pred_seg, settings.options.thickness)
+      x_valid       = unthick(x_valid, settings.options.thickness, validsubset['dataid'], valid_index)
+      y_valid       = unthick(y_valid, settings.options.thickness, validsubset['dataid'], valid_index)
+      
+      y_valid_liver = unthick(y_valid_liver, settings.options.thickness, validsubset['dataid'], valid_index)
+      y_pred_float  = unthick(y_pred_float, settings.options.thickness, validsubset['dataid'], valid_index)
+      y_pred_seg    = unthick(y_pred_seg, settings.options.thickness, validsubset['dataid'], valid_index)
 
   print("\tsaving to file...")
   

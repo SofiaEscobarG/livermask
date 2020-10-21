@@ -21,7 +21,7 @@ import matplotlib.pyplot as plt
 
 import settings
 from setupmodel import GetOptimizer, GetLoss
-from buildmodel import get_unet, thick_slices, unthick_slices
+from buildmodel import get_unet, thick_slices, unthick_slices, unthick
 from mymetrics import dsc, dsc_l2, l1, dsc_l2_3D, dsc_int
 from ista import ISTA
 import preprocess
@@ -45,7 +45,9 @@ def PredictModel(model=settings.options.predictmodel, image=settings.options.pre
     resizepredict = preprocess.rescale(resizepredict, settings.options.hu_lb, settings.options.hu_ub)
     
     if settings.options.D3 or settings.options.D25: 
-        resizepredict2 = thick_slices(resizepredict, settings.options.thickness)
+        dataid = np.ones((resizepredict.shape[0]))
+        idx = np.array([1])
+        resizepredict2 = thick_slices(resizepredict, settings.options.thickness, dataid, idx)
     else: 
         resizepredict2 = resizepredict
         
@@ -78,8 +80,10 @@ def PredictModel(model=settings.options.predictmodel, image=settings.options.pre
     segout_int   = (segout_float >= settings.options.segthreshold).astype(settings.SEG_DTYPE)
 
     if settings.options.D3:
-        segout_float = unthick_slices(segout_float, settings.options.thickness)
+        segout_float = unthick_slices(segout_float, settings.options.thickness, dataid, idx)
         segout_int   = unthick_slices(segout_int, settings.options.thickness)
+    if settings.options.D25: 
+        resizepredict = resizepredict.transpose((0,2,1))
 
     segout_int   = preprocess.largest_connected_component(segout_int).astype(settings.SEG_DTYPE)
     
@@ -168,7 +172,7 @@ def PredictDropout(model=settings.options.predictmodel, image=settings.options.p
     segout_int_img    = nib.Nifti1Image(segout_int, None)
     segout_int_img.to_filename( outdir.replace('.nii', '-pred-seg.nii') )
     
-    if seg:
+    if seg: 
         score = dsc_l2_3D(origseg, segout_int)
         print('\t\t\tdsc:\t', 1.0 - score)
         

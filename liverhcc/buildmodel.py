@@ -15,31 +15,45 @@ from DepthwiseConv3D import DepthwiseConv3D
 from ista import ISTA
 
 
-# stacks 2D slices to create 3D slices -- Sofia 
-def thick_slices(imagestack, thickness):
-    x = imagestack.shape[1]
-    y = imagestack.shape[2]
-    
+# 3D slices function --Sofia FIXED PADDING 
+def thick_slices(imagestack, thickness, dataid, idx):
+    x      = imagestack.shape[1]    # num x pixels 
+    y      = imagestack.shape[2]    # num y pixels 
+    nslice = imagestack.shape[0]    # total num of slices in imagestack
+        
     if settings.options.D3:
-        w = 1
-    elif settings.options.D25:
+        w = 1 
+    elif settings.options.D25: 
         w = thickness//2
+    z = nslice
+        
+    thickimagestacks = np.zeros((z,x,y,thickness))
+    track = 0
     
-    padding = np.zeros((w, x, y))
-    paddedstack = np.vstack((padding, imagestack, padding))
-    
-    nimages = paddedstack.shape[0]
-    z = nimages - thickness + 1
-    
-    #paddedstack = np.reshape(paddedstack, (x,y,nimages))
-    paddedstack = np.transpose(paddedstack,(2,1,0))
-    thickimagestacks = np.empty((z, x, y, thickness))
+    for ii in idx:
+        volume_idx = np.isin(dataid, ii)
+        volume     = imagestack[volume_idx,:,:]
+        
+        topslice       = volume[1,:,:]
+        paddingtop     = np.repeat(topslice[np.newaxis,...],  w, axis=0)
+        
+        bottomslice    = volume[-1,:,:]
+        paddingbottom  = np.repeat(bottomslice[np.newaxis,...], w, axis=0)
+        
+        paddedvolume   = np.vstack((paddingtop, volume, paddingbottom))
+        paddedvolume   = np.transpose(paddedvolume,(2,1,0))
+        
 
-    for i in range(z):
-        thickimagestacks[i, :, :, :] = paddedstack[:,:,i: i + thickness]
+        for jj in range(paddedvolume.shape[2] - thickness + 1):
+            thickimagestacks[track+jj,:,:,:] = paddedvolume[:,:,jj:jj+thickness]
+        track = track + paddedvolume.shape[2] - thickness + 1
+        
+    if settings.options.D3: 
+        thickimagestacks = thickimagestacks[0:track,:,:,:]
     return thickimagestacks
 
 
+# unthick_slices function --Sofia
 def unthick_slices(thickimagestack, thickness):
     (z,x,y,_) = thickimagestack.shape
     nimages = z + thickness - 3
@@ -70,6 +84,38 @@ def unthick_slices(thickimagestack, thickness):
         stack3[i,:,:] = np.average(paddedstack[idx,:,:], axis=0)  
 
     unthickstack = np.vstack((stack1, stack2, stack3))
+    
+    return unthickstack
+
+
+# Fixing padding issue with unthick slices
+def unthick(thickimagestack, thickness, dataid, idx):
+    (z,x,y,_) = thickimagestack.shape
+    
+    unthickstack = np.zeros((dataid.shape[0], x, y))
+    
+    if settings.options.D3:
+        npadding = 2
+    elif settings.options.D25:
+        npadding = (thickness//2)*2
+    
+    track1 = 0
+    track2 = 0
+    
+    for ii in idx:
+        volumeslices = sum(np.isin(dataid, ii)) + npadding
+        thickslices = volumeslices - thickness + 1
+        
+        volstack = thickimagestack[track1:(track1+thickslices),:,:,:]
+        
+        small_stack = unthick_slices(volstack, thickness)
+        track1 = track1 + thickslices
+        
+        unthickstack[track2:(track2+small_stack.shape[0]),:,:] = small_stack
+        track2 = track2 + small_stack.shape[0]
+        
+        if track1 >= z:
+            break
     
     return unthickstack
 
