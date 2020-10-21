@@ -29,17 +29,6 @@ import settings
 from settings import process_options, perform_setup
 (options, args) = process_options()
 
-options.dbfile="./trainingdata_small.csv"
-options.rootlocation="../../unlinked_livermask/data/LiTS"
-options.trainmodel=True
-options.D3=True
-options.numepochs=1
-options.thickness=5
-options.outdir="../../../Tumor_Project/AWS_outputs/test3_padding"
-options.predictmodel="../../../Tumor_Project/AWS_outputs/test3_padding/001/000/liver/modelunet.h5"
-options.predictimage="../../unlinked_livermask/data/LiTS/TrainingBatch2/volume-130.nii"
-options.segmentation="../../test3_padding.nii"
-
 IMG_DTYPE, SEG_DTYPE, _globalnpfile, _globalexpectedpixel, _nx, _ny = perform_setup(options)
 print('database file: %s ' % settings._globalnpfile )
 

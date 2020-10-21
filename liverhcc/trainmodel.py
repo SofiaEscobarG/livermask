@@ -295,11 +295,11 @@ def TrainModel(idfold=0):
   print("\n\n\tapplying models...")
   
   if settings.options.D25:
-      y_pred_float = model.predict( x_valid_typed ) #[...,settings.options.thickness] )
+      y_pred_float = model.predict( x_valid_typed )[...,0] #[...,settings.options.thickness] )
   else: 
-      y_pred_float = model.predict( x_valid_typed[...,np.newaxis] )
+      y_pred_float = model.predict( x_valid_typed[...,np.newaxis] )[...,0]
       
-  y_pred_seg   = (y_pred_float[...,0] >= settings.options.segthreshold).astype(settings.SEG_DTYPE)    
+  y_pred_seg   = (y_pred_float >= settings.options.segthreshold).astype(settings.SEG_DTYPE)    
 
   if settings.options.D3:
       x_valid       = unthick(x_valid, settings.options.thickness, validsubset['dataid'], valid_index)
