@@ -55,7 +55,8 @@ def PredictModel(model=settings.options.predictmodel, image=settings.options.pre
         origseg = preprocess.resize_to_nn(origseg)
         origseg = preprocess.livermask(origseg)
         if settings.options.D25: 
-            origseg = thick_slices(origseg, 1)
+            dataid_origseg = np.ones((origseg.shape[0]))
+            origseg = thick_slices(origseg, 1, dataid_origseg, idx)
             origseg = origseg[...,0]
         
         origseg_img = nib.Nifti1Image(preprocess.resize_to_original(origseg), None)
