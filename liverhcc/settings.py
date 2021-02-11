@@ -187,8 +187,9 @@ def perform_setup(options):
     IMG_DTYPE   = np.int16
     SEG_DTYPE   = np.uint8
     FLOAT_DTYPE = np.float32
-
-    _globalnpfile = options.dbfile.replace('.csv','%d.npy' % options.trainingresample )
+    
+    _globalnpfile = "../../unlinked_livermask/liverhcc/trainingdata256.npy"
+   # _globalnpfile = options.dbfile.replace('.csv','%d.npy' % options.trainingresample )
     _globalexpectedpixel=512
     _nx = options.trainingresample
     _ny = options.trainingresample

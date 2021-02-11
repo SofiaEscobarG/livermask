@@ -58,6 +58,8 @@ def PredictModel(model=settings.options.predictmodel, image=settings.options.pre
             dataid_origseg = np.ones((origseg.shape[0]))
             origseg = thick_slices(origseg, 1, dataid_origseg, idx)
             origseg = origseg[...,0]
+#        if not settings.options.D25 and not settings.options.D3: 
+#            origseg = origseg.transpose((0,2,1)).astype(settings.FLOAT_DTYPE)
         
         origseg_img = nib.Nifti1Image(preprocess.resize_to_original(origseg), None)
         origseg_img.to_filename( outdir.replace('.nii', '-trueseg.nii') )
@@ -65,13 +67,8 @@ def PredictModel(model=settings.options.predictmodel, image=settings.options.pre
     ###
     ### set up model
     ###
-    
-#    opt          = GetOptimizer()
-#    lss, met     = GetLoss()
-#    loaded_model = get_unet()
-#    loaded_model.compile(loss=lss, metrics=met, optimizer=opt)
-#    loaded_model.load_weights(model)
-    loaded_model=load_model(model, custom_objects={'dsc_l2':dsc_l2, 'l1':l1, 'dsc':dsc, 'dsc_int':dsc, 'ISTA':ISTA})
+    loaded_model=load_model(model, custom_objects={'dsc_l2':dsc_l2, 'l1':l1, 'dsc':dsc, 'dsc_int':dsc, 'ISTA':ISTA}, compile=False)
+    #loaded_model.summary()
     
     if settings.options.D25: 
         segout_float = loaded_model.predict( resizepredict2)[...,0]
@@ -83,10 +80,10 @@ def PredictModel(model=settings.options.predictmodel, image=settings.options.pre
     if settings.options.D3:
         segout_float = unthick_slices(segout_float, settings.options.thickness, dataid, idx)
         segout_int   = unthick_slices(segout_int, settings.options.thickness)
-    if settings.options.D25: 
+    elif settings.options.D25: 
         resizepredict = resizepredict.transpose((0,2,1))
-
-    segout_int   = preprocess.largest_connected_component(segout_int).astype(settings.SEG_DTYPE)
+    
+    #segout_int   = preprocess.largest_connected_component(segout_int).astype(settings.SEG_DTYPE)
     
     segin_windowed     = preprocess.resize_to_original(resizepredict)
     segin_windowed_img = nib.Nifti1Image(segin_windowed, None, header=origheader)
@@ -101,7 +98,8 @@ def PredictModel(model=settings.options.predictmodel, image=settings.options.pre
     segout_int_img.to_filename( outdir.replace('.nii', '-pred-seg.nii') )
     
     if seg: 
-        score = dsc_l2_3D(origseg, segout_int)
+        #score = dsc_l2_3D(origseg, segout_int)
+        score = dsc_l2_3D(origseg.astype(settings.FLOAT_DTYPE), segout_float)
         print('dsc:\t', 1.0 - score)
 
     return segout_float_resize, segout_int_resize

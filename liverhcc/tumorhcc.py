@@ -37,7 +37,6 @@ from trainmodel import TrainModel
 from predictmodel import PredictModel
 from kfolds import OneKfold, Kfold
 
-
 if options.builddb:
     BuildDB()
 if options.kfolds > 1:
